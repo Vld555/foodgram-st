@@ -57,6 +57,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
+
 ROOT_URLCONF = 'foodgram.urls'
 
 TEMPLATES = [
@@ -89,7 +91,7 @@ DATABASES = {
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'foodgram_password'),
 
         'HOST': os.getenv('DB_HOST', 'db'),
-        'PORT': os.getenv('DB_PORT', '5432'),  
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 
