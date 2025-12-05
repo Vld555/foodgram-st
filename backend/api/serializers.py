@@ -62,9 +62,21 @@ class SubscriptionSerializer(CustomUserSerializer):
         request = self.context.get('request')
         limit = request.GET.get('recipes_limit')
         recipes = obj.recipes.all()
+
         if limit:
-            recipes = recipes[:int(limit)]
-        serializer = RecipeShortSerializer(recipes, many=True, read_only=True)
+            try:
+                recipes = recipes[:int(limit)]
+            except (ValueError, TypeError):
+                pass
+
+        # ВАЖНО: передаем context=self.context, чтобы сериализатор мог
+        # построить полные URL для картинок
+        serializer = RecipeShortSerializer(
+            recipes,
+            many=True,
+            read_only=True,
+            context=self.context
+        )
         return serializer.data
 
     def get_recipes_count(self, obj):
