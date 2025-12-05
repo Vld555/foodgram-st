@@ -11,7 +11,6 @@ router.register('ingredients', IngredientViewSet)
 router.register('recipes', RecipeViewSet)
 
 urlpatterns = [
-    # Явный путь для аватара - ВАЖНО!
     path('users/me/avatar/',
          CustomUserViewSet.as_view({'put': 'avatar', 'delete': 'avatar'})),
 

@@ -3,14 +3,16 @@ from django.contrib.auth.admin import UserAdmin
 
 from .models import Subscription, User
 
+
 @admin.register(User)
 class UserAdmin(UserAdmin):
     list_display = (
-        'id', 'username', 'email', 
+        'id', 'username', 'email',
         'first_name', 'last_name'
     )
     search_fields = ('email', 'username')
     list_filter = ('email', 'username')
+
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):

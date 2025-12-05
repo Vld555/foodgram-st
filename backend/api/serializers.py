@@ -35,7 +35,6 @@ class CustomUserSerializer(serializers.ModelSerializer):
                   'last_name', 'is_subscribed', 'avatar')
 
     def get_is_subscribed(self, obj):
-        # Пока ставим заглушку, так как логику подписок еще не писали
         return False
 
 
@@ -69,8 +68,6 @@ class SubscriptionSerializer(CustomUserSerializer):
             except (ValueError, TypeError):
                 pass
 
-        # ВАЖНО: передаем context=self.context, чтобы сериализатор мог
-        # построить полные URL для картинок
         serializer = RecipeShortSerializer(
             recipes,
             many=True,

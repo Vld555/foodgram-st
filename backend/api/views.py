@@ -102,17 +102,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[AllowAny]
     )
     def get_link(self, request, pk=None):
-        # Проверяем, что рецепт существует
         recipe = get_object_or_404(Recipe, id=pk)
-        # Генерируем ссылку.
-        # Используем build_absolute_uri для создания полного URL (http://localhost/...)
         link = request.build_absolute_uri(f'/recipes/{pk}/')
         return Response({'short-link': link})
 
 
 class LimitPageNumberPagination(PageNumberPagination):
     page_size = 6
-    # Это важно! Фронтенд шлет параметр 'limit', а не 'page_size'
     page_size_query_param = 'limit'
 
 
@@ -121,34 +117,27 @@ class CustomUserViewSet(UserViewSet):
     Кастомный вьюсет для пользователей.
     Наследуется от Djoser, добавляет управление подписками.
     """
-    pagination_class = LimitPageNumberPagination  # Используем стандартную пагинацию, но класс переопределять не будем явно, если он задан в settings
+    pagination_class = LimitPageNumberPagination
 
     @action(detail=False, permission_classes=[IsAuthenticated])
     def subscriptions(self, request):
         user = request.user
         queryset = User.objects.filter(subscribing__user=user)
 
-        # --- НАЧАЛО ИЗМЕНЕНИЙ ---
-        # Создаем пагинатор вручную, игнорируя настройки класса
         paginator = PageNumberPagination()
-        paginator.page_size = 6  # Стандартный размер страницы
-        paginator.page_size_query_param = 'limit'  # Позволяем клиенту менять limit через URL
+        paginator.page_size = 6
+        paginator.page_size_query_param = 'limit'
 
-        # Вычисляем страницу
         pages = paginator.paginate_queryset(queryset, request, view=self)
 
-        # Если страниц много - возвращаем пагинированный ответ
         if pages is not None:
             serializer = SubscriptionSerializer(
                 pages,
                 many=True,
                 context={'request': request}
             )
-            # ВАЖНО: вызываем метод не у self, а у созданного объекта paginator
             return paginator.get_paginated_response(serializer.data)
-        # --- КОНЕЦ ИЗМЕНЕНИЙ ---
 
-        # Если пагинация не нужна (например, мало объектов)
         serializer = SubscriptionSerializer(
             queryset,
             many=True,
