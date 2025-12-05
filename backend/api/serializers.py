@@ -18,6 +18,59 @@ class Base64ImageField(serializers.ImageField):
         return super().to_internal_value(data)
 
 
+class UserAvatarSerializer(serializers.ModelSerializer):
+    avatar = Base64ImageField()
+
+    class Meta:
+        model = User
+        fields = ('avatar',)
+
+
+class CustomUserSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('email', 'id', 'username', 'first_name',
+                  'last_name', 'is_subscribed', 'avatar')
+
+    def get_is_subscribed(self, obj):
+        # Пока ставим заглушку, так как логику подписок еще не писали
+        return False
+
+
+class RecipeShortSerializer(serializers.ModelSerializer):
+    """Упрощенный вид рецепта (для подписок и списка покупок)."""
+    image = Base64ImageField()
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class SubscriptionSerializer(CustomUserSerializer):
+    """Сериализатор подписки: выводит автора и список его рецептов."""
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('email', 'id', 'username', 'first_name', 'last_name',
+                  'is_subscribed', 'recipes', 'recipes_count')
+
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        limit = request.GET.get('recipes_limit')
+        recipes = obj.recipes.all()
+        if limit:
+            recipes = recipes[:int(limit)]
+        serializer = RecipeShortSerializer(recipes, many=True, read_only=True)
+        return serializer.data
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()
+
+
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     """Сериализатор для вывода ингредиентов с количеством."""
     id = serializers.ReadOnlyField(source='ingredient.id')
@@ -44,8 +97,6 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 User = get_user_model()
 
-# Сериализатор для регистрации пользователя
-
 
 class CustomUserCreateSerializer(DjoserUserCreateSerializer):
     class Meta:
@@ -54,23 +105,11 @@ class CustomUserCreateSerializer(DjoserUserCreateSerializer):
                   'first_name', 'last_name', 'password')
 
 
-class CustomUserSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = ('email', 'id', 'username', 'first_name',
-                  'last_name', 'is_subscribed')
-
-    def get_is_subscribed(self, obj):
-        # Пока ставим заглушку, так как логику подписок еще не писали
-        return False
-
-
 class RecipeSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
-        many=True
+        many=True,
+        required=False
     )
     author = CustomUserSerializer(read_only=True)
     ingredients = RecipeIngredientSerializer(
@@ -103,7 +142,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         return False
 
     def validate(self, data):
-        # Проверка ингредиентов при создании/редактировании
         ingredients = self.initial_data.get('ingredients')
         if not ingredients:
             raise serializers.ValidationError(
@@ -136,18 +174,22 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
-        tags = validated_data.pop('tags')
+        tags = validated_data.pop('tags', [])
+
         recipe = Recipe.objects.create(**validated_data)
-        recipe.tags.set(tags)
+        if tags:
+            recipe.tags.set(tags)
+
         self.create_ingredients(ingredients, recipe)
         return recipe
 
     def update(self, instance, validated_data):
         ingredients = validated_data.pop('ingredients')
-        tags = validated_data.pop('tags')
+        tags = validated_data.pop('tags', [])
 
         instance.tags.clear()
-        instance.tags.set(tags)
+        if tags:
+            instance.tags.set(tags)
 
         RecipeIngredient.objects.filter(recipe=instance).delete()
         self.create_ingredients(ingredients, instance)
@@ -155,10 +197,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
     def to_representation(self, instance):
-        # Чтобы при ответе API теги возвращались не ID, а объектами (как требует фронтенд)
         request = self.context.get('request')
         context = {'request': request}
         representation = super().to_representation(instance)
+        from .serializers import TagSerializer
         representation['tags'] = TagSerializer(
             instance.tags.all(), many=True).data
         return representation
