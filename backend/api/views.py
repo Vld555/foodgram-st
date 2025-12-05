@@ -8,11 +8,11 @@ from .serializers import IngredientSerializer, TagSerializer
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    pagination_class = None  # Для тегов пагинация обычно не нужна, их мало
+    pagination_class = None  
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    pagination_class = None  # Отключаем пагинацию для ингредиентов
-    search_fields = ('^name',)  # Поиск по началу названия
+    pagination_class = None  
+    search_fields = ('^name',) 
