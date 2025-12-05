@@ -6,8 +6,6 @@ from users.models import User
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserCreateSerializer as DjoserUserCreateSerializer
 
-# ... ваши существующие TagSerializer и IngredientSerializer ...
-
 
 class Base64ImageField(serializers.ImageField):
     """Кастомное поле для кодирования изображения в base64."""
@@ -18,6 +16,18 @@ class Base64ImageField(serializers.ImageField):
             ext = format.split('/')[-1]
             data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
         return super().to_internal_value(data)
+
+
+class RecipeIngredientSerializer(serializers.ModelSerializer):
+    """Сериализатор для вывода ингредиентов с количеством."""
+    id = serializers.ReadOnlyField(source='ingredient.id')
+    name = serializers.ReadOnlyField(source='ingredient.name')
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredient.measurement_unit')
+
+    class Meta:
+        model = RecipeIngredient
+        fields = ('id', 'name', 'measurement_unit', 'amount')
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -55,18 +65,6 @@ class CustomUserSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, obj):
         # Пока ставим заглушку, так как логику подписок еще не писали
         return False
-
-
-class RecipeIngredientSerializer(serializers.ModelSerializer):
-    """Сериализатор для вывода ингредиентов с количеством."""
-    id = serializers.ReadOnlyField(source='ingredient.id')
-    name = serializers.ReadOnlyField(source='ingredient.name')
-    measurement_unit = serializers.ReadOnlyField(
-        source='ingredient.measurement_unit')
-
-    class Meta:
-        model = RecipeIngredient
-        fields = ('id', 'name', 'measurement_unit', 'amount')
 
 
 class RecipeSerializer(serializers.ModelSerializer):

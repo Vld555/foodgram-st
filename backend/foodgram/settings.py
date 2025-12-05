@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'recipes',
     'api',
     'rest_framework.authtoken',
-    'djoser'
+    'djoser',
+    'django_filters'
 ]
 
 MIDDLEWARE = [
@@ -138,6 +139,10 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 6,
+    # Добавляем настройку фильтрации:
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
 }
 
 DJOSER = {
